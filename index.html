@@ -26,7 +26,7 @@
           <button type="button" class="nav-link" data-layout="focus" aria-pressed="false">Focus</button>
           <button type="button" class="nav-link" data-toggle="chat" aria-pressed="false">Chat</button>
           <button type="button" class="nav-link" data-toggle="theater" aria-pressed="false">Theater</button>
-          <a class="nav-link" href="https://tmfrz.com/streamers" target="_blank" rel="noopener noreferrer">Streamers</a>
+          <button type="button" class="nav-link js-live">Live<span class="live-count" hidden></span></button>
         </nav>
         <span class="glow-wrap">
           <button type="button" class="btn-glow" id="header-add">
@@ -71,6 +71,7 @@
         <button type="button" data-layout="focus" aria-pressed="false">Focus</button>
         <button type="button" data-toggle="chat" aria-pressed="false">Chat</button>
         <button type="button" data-toggle="theater" aria-pressed="false">Theater</button>
+        <button type="button" class="js-live">Live<span class="live-count" hidden></span></button>
       </div>
       <p class="meta" id="meta">Links pick their own platform · Plain names use the selected one</p>
       <p class="notice" id="notice" hidden></p>
@@ -88,6 +89,26 @@
           <div class="chat-body" id="chat-body"></div>
         </aside>
       </div>
+
+      <section class="discover" id="discover" aria-labelledby="discover-title">
+        <div class="discover-head">
+          <div class="section-head">
+            <p class="eyebrow">Online</p>
+            <h2 id="discover-title">LIVE NOW</h2>
+            <p class="lede">Twitch and Kick streams with TMFRZ in the title, sorted by viewer count.</p>
+          </div>
+          <div class="discover-actions" id="discover-actions" hidden>
+            <div class="seg" role="group" aria-label="Filter by platform">
+              <button type="button" data-filter="all" aria-pressed="true">All</button>
+              <button type="button" data-filter="twitch" aria-pressed="false">Twitch</button>
+              <button type="button" data-filter="kick" aria-pressed="false">Kick</button>
+            </div>
+            <button type="button" class="btn-accent" id="add-all">Add all</button>
+          </div>
+        </div>
+        <p class="meta" id="discover-meta">Checking for live streams</p>
+        <div class="live-grid" id="live-grid"></div>
+      </section>
 
       <div class="empty" id="empty">
         <div class="section-head">

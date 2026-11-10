@@ -1,0 +1,48 @@
+name: Discover live streams
+
+# Refreshes live.json on the live-data branch, which the site reads to list
+# streams with the keyword in their title.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - scripts/discover.mjs
+      - .github/workflows/discover.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: discover
+  cancel-in-progress: true
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Find live streams
+        env:
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          KICK_CLIENT_ID: ${{ secrets.KICK_CLIENT_ID }}
+          KICK_CLIENT_SECRET: ${{ secrets.KICK_CLIENT_SECRET }}
+          KEYWORD: tmfrz
+        run: |
+          mkdir out
+          node scripts/discover.mjs > out/live.json
+      - name: Publish to live-data branch
+        run: |
+          cd out
+          git init -q -b live-data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add live.json
+          git commit -q -m "Update live streams"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" live-data

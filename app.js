@@ -4,6 +4,9 @@
   const HOST = location.hostname;
   const MAX_STREAMS = 12;
   const STORE_KEY = 'tmf-multi-stream';
+  // Written every ~10 minutes by .github/workflows/discover.yml.
+  const LIVE_URL = 'https://raw.githubusercontent.com/brikcs/tmf-multi-stream/live-data/live.json';
+  const LIVE_REFRESH_MS = 3 * 60 * 1000;
   const GAP = 8;
   const HEAD = 38; // tile header + borders
   const isYtChannel = (id) => /^UC[\w-]{22}$/.test(id);
@@ -231,6 +234,7 @@
     document.querySelectorAll('[data-platform]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.platform === state.platform)));
 
     renderChat();
+    renderLive();
     layout();
     persist();
   }
@@ -522,6 +526,138 @@
     render();
   });
 
+  /* ---------- Live discovery ---------- */
+
+  const live = { data: null, failed: false, filter: 'all' };
+  const liveGrid = $('live-grid');
+
+  const ago = (iso) => {
+    const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    return `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
+  };
+  const duration = (iso) => {
+    const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    return mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  };
+
+  function liveStreams() {
+    if (!live.data) return [];
+    return live.data.streams
+      .map((s) => ({ info: s, stream: PLATFORMS[s.platform] && s.platform !== 'youtube' ? makeStream(s.platform, String(s.channel || '')) : null }))
+      .filter((x) => x.stream);
+  }
+
+  function liveStatus(all) {
+    if (live.failed && !live.data) return 'Live list is not available yet · Add channels by name above';
+    if (!live.data) return 'Checking for live streams';
+    const src = live.data.sources || {};
+    const names = { twitch: 'Twitch', kick: 'Kick' };
+    const notes = [];
+    for (const key of ['twitch', 'kick']) {
+      const s = src[key] || {};
+      if (s.configured === false) notes.push(`${names[key]} is not connected yet`);
+      else if (!s.ok) notes.push(`${names[key]} check failed`);
+    }
+    if (src.kick && src.kick.ok && src.kick.partial) notes.push('Kick results can be incomplete');
+    const stale = Date.now() - new Date(live.data.updated).getTime() > 45 * 60 * 1000;
+    return [`${all.length} live`, `Updated ${ago(live.data.updated)}${stale ? ' (stale)' : ''}`, ...notes].join(' · ');
+  }
+
+  function renderLive() {
+    const all = liveStreams();
+    const shown = all.filter((x) => live.filter === 'all' || x.stream.platform === live.filter);
+    const inLineup = new Set(state.streams.map((s) => s.id));
+
+    $('discover-meta').textContent = liveStatus(all);
+    $('discover-actions').hidden = !all.length;
+    document.querySelectorAll('.live-count').forEach((el) => { el.textContent = all.length; el.hidden = !all.length; });
+    document.querySelectorAll('[data-filter]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.filter === live.filter)));
+
+    liveGrid.replaceChildren(...shown.map(({ info, stream }) => {
+      const p = PLATFORMS[stream.platform];
+      const added = inLineup.has(stream.id);
+      const card = document.createElement('article');
+      card.className = `live-card${added ? ' in-lineup' : ''}`;
+      card.style.setProperty('--pc', p.color);
+      card.innerHTML = `
+        <a class="live-thumb" target="_blank" rel="noopener noreferrer">
+          <span class="live-flag"><i></i>Live</span>
+          <span class="live-viewers"></span>
+          <span class="badge">${p.label}</span>
+        </a>
+        <p class="live-title"></p>
+        <p class="live-name"></p>
+        <p class="live-sub"></p>
+        <div class="live-buttons">
+          <button type="button"></button>
+          <a target="_blank" rel="noopener noreferrer">Open</a>
+        </div>`;
+      const url = p.url(stream.channel);
+      const thumb = card.querySelector('.live-thumb');
+      thumb.href = url;
+      if (typeof info.thumb === 'string' && /^https:\/\//.test(info.thumb)) {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.loading = 'lazy';
+        img.referrerPolicy = 'no-referrer';
+        img.src = info.thumb;
+        img.addEventListener('error', () => img.remove());
+        thumb.prepend(img);
+      }
+      card.querySelector('.live-viewers').textContent = `${Number(info.viewers) || 0} watching`;
+      card.querySelector('.live-title').textContent = info.title || '';
+      card.querySelector('.live-name').textContent = info.name || stream.channel;
+      card.querySelector('.live-sub').textContent = [info.started ? duration(info.started) : '', info.game || ''].filter(Boolean).join(' · ');
+      card.querySelector('.live-buttons a').href = url;
+      const btn = card.querySelector('button');
+      btn.textContent = added ? 'In lineup · Remove' : 'Watch here';
+      btn.addEventListener('click', () => {
+        if (added) { removeStream(stream.id); return; }
+        if (state.streams.length >= MAX_STREAMS) { toast(`Lineup is full — ${MAX_STREAMS} streams max`); return; }
+        state.streams.push(stream);
+        render();
+        toast(`${stream.channel} added`);
+      });
+      return card;
+    }));
+  }
+
+  async function loadLive() {
+    try {
+      const res = await fetch(`${LIVE_URL}?t=${Math.floor(Date.now() / 60000)}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      if (!data || !Array.isArray(data.streams)) throw new Error('bad data');
+      live.data = data;
+      live.failed = false;
+    } catch {
+      live.failed = true;
+    }
+    renderLive();
+  }
+
+  document.querySelectorAll('[data-filter]').forEach((b) => b.addEventListener('click', () => { live.filter = b.dataset.filter; renderLive(); }));
+  document.querySelectorAll('.js-live').forEach((b) => b.addEventListener('click', () => {
+    if (state.theater) setTheater(false);
+    $('discover').scrollIntoView({ behavior: 'smooth' });
+  }));
+  $('add-all').addEventListener('click', () => {
+    const have = new Set(state.streams.map((s) => s.id));
+    const fresh = liveStreams()
+      .filter((x) => (live.filter === 'all' || x.stream.platform === live.filter) && !have.has(x.stream.id))
+      .map((x) => x.stream);
+    const room = MAX_STREAMS - state.streams.length;
+    if (!fresh.length) { toast('Everything here is already in the lineup'); return; }
+    if (room <= 0) { toast(`Lineup is full — ${MAX_STREAMS} streams max`); return; }
+    state.streams.push(...fresh.slice(0, room));
+    render();
+    toast(fresh.length > room ? `Added the top ${room} — lineup is full` : `Added ${fresh.length} stream${fresh.length === 1 ? '' : 's'}`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+  setInterval(() => { if (!document.hidden) loadLive(); }, LIVE_REFRESH_MS);
+
   if (!HOST) {
     const notice = $('notice');
     notice.textContent = 'This page is open as a local file. Twitch only plays when the page is served from a web address (localhost or a real domain).';
@@ -530,4 +666,5 @@
 
   restore();
   render();
+  loadLive();
 })();
