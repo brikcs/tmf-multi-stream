@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TMF Multi Stream</title>
+  <meta name="description" content="Watch multiple Twitch, Kick and YouTube streams side by side.">
+  <meta name="theme-color" content="#0a090e">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-fade" aria-hidden="true"></div>
+    <div class="header-row">
+      <a class="wordmark" href="./" aria-label="TMF Multi Stream home">
+        <span class="wordmark-main">TMF</span><span class="wordmark-sub">MULTI</span>
+      </a>
+
+      <div class="header-center">
+        <nav class="navbar" aria-label="Layout">
+          <button type="button" class="nav-link" data-layout="grid" aria-pressed="true">Grid</button>
+          <button type="button" class="nav-link" data-layout="focus" aria-pressed="false">Focus</button>
+          <button type="button" class="nav-link" data-toggle="chat" aria-pressed="false">Chat</button>
+          <button type="button" class="nav-link" data-toggle="theater" aria-pressed="false">Theater</button>
+          <a class="nav-link" href="https://tmfrz.com/streamers" target="_blank" rel="noopener noreferrer">Streamers</a>
+        </nav>
+        <span class="glow-wrap">
+          <button type="button" class="btn-glow" id="header-add">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Add stream
+          </button>
+        </span>
+      </div>
+
+      <div class="header-right">
+        <button type="button" class="btn-icon" id="reload-all" aria-label="Reload all streams" title="Reload all streams">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/></svg>
+        </button>
+        <button type="button" class="btn-login" id="share">Share</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="page">
+      <div class="intro" id="intro">
+        <span class="eyebrow-lg">ON AIR</span>
+        <h1>MULTI STREAM</h1>
+        <p class="lede">Watch Twitch, Kick and YouTube streams side by side. Paste channel names or links, pick a layout, and share the lineup with one link.</p>
+      </div>
+
+      <form class="addbar" id="add-form" autocomplete="off">
+        <div class="seg" role="group" aria-label="Platform for plain channel names">
+          <button type="button" data-platform="twitch" aria-pressed="true">Twitch</button>
+          <button type="button" data-platform="kick" aria-pressed="false">Kick</button>
+          <button type="button" data-platform="youtube" aria-pressed="false">YouTube</button>
+        </div>
+        <label class="field">
+          <span class="sr-only">Channel name or stream link</span>
+          <input id="add-input" type="text" inputmode="url" spellcheck="false" placeholder="Channel name or link — separate several with commas">
+        </label>
+        <button type="submit" class="btn-accent">Add</button>
+        <button type="button" class="btn-ghost" id="clear-all" hidden>Clear all</button>
+      </form>
+      <div class="seg viewbar" role="group" aria-label="View">
+        <button type="button" data-layout="grid" aria-pressed="true">Grid</button>
+        <button type="button" data-layout="focus" aria-pressed="false">Focus</button>
+        <button type="button" data-toggle="chat" aria-pressed="false">Chat</button>
+        <button type="button" data-toggle="theater" aria-pressed="false">Theater</button>
+      </div>
+      <p class="meta" id="meta">Links pick their own platform · Plain names use the selected one</p>
+      <p class="notice" id="notice" hidden></p>
+
+      <div class="watch" id="watch" hidden>
+        <div class="stage" id="stage" aria-label="Streams"></div>
+        <aside class="chat" id="chat" hidden aria-label="Stream chat">
+          <div class="chat-head">
+            <span class="label">Chat</span>
+            <button type="button" class="tile-btn" id="chat-close" aria-label="Close chat" title="Close chat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="square" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+          </div>
+          <div class="chat-tabs scrollbar-accent" id="chat-tabs" role="tablist"></div>
+          <div class="chat-body" id="chat-body"></div>
+        </aside>
+      </div>
+
+      <div class="empty" id="empty">
+        <div class="section-head">
+          <p class="eyebrow">Get started</p>
+          <h2>BUILD YOUR LINEUP</h2>
+          <p class="lede">Nothing is playing yet. Add a channel above and it starts muted, ready to watch.</p>
+        </div>
+        <div class="steps">
+          <div class="card cut">
+            <span class="step-num">01</span>
+            <h3>Add channels</h3>
+            <p>Type a channel name or paste a Twitch, Kick or YouTube link. Add up to 12 at once.</p>
+          </div>
+          <div class="card cut">
+            <span class="step-num">02</span>
+            <h3>Pick a layout</h3>
+            <p>Grid shows every stream the same size. Focus puts one stream up front with the rest alongside.</p>
+          </div>
+          <div class="card cut">
+            <span class="step-num">03</span>
+            <h3>Share the lineup</h3>
+            <p>Hit Share to copy a link that opens the same streams in the same layout for anyone.</p>
+          </div>
+        </div>
+        <div class="keys">
+          <div class="card cut"><span class="label">Grid / Focus</span><b>G &nbsp;/&nbsp; F</b></div>
+          <div class="card cut"><span class="label">Focus stream</span><b>1 – 9</b></div>
+          <div class="card cut"><span class="label">Chat</span><b>C</b></div>
+          <div class="card cut"><span class="label">Theater</span><b>T</b></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer" id="footer">
+    <span>TMF Multi Stream · Fan-made viewer, not affiliated with Twitch, Kick or YouTube</span>
+    <a href="https://tmfrz.com" target="_blank" rel="noopener noreferrer">TMFRZ.com</a>
+  </footer>
+
+  <button type="button" class="btn-accent exit-theater" id="exit-theater" hidden>Exit theater</button>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
