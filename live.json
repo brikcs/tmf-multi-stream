@@ -1,0 +1,17 @@
+{
+ "updated": "2026-11-21T18:29:05.788Z",
+ "keyword": "tmfrz",
+ "sources": {
+  "twitch": {
+   "ok": false,
+   "configured": false,
+   "count": 0
+  },
+  "kick": {
+   "ok": false,
+   "configured": false,
+   "count": 0
+  }
+ },
+ "streams": []
+}
